@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EvalPar — Coevaluación</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --border: #E2DDD5;
+    --text: #1A1714;
+    --text2: #6B6560;
+    --text3: #A89F96;
+    --accent: #2D5BE3;
+    --accent-bg: #EEF2FD;
+    --green: #1A7F4B;
+    --green-bg: #E8F5EE;
+    --star-off: #DDD8D0;
+    --star-on: #F5A623;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    background: var(--text);
+    color: #fff;
+    padding: 20px 20px 18px;
+    text-align: center;
+  }
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+  }
+  header p {
+    font-size: 13px;
+    opacity: 0.6;
+    font-weight: 300;
+  }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+
+  .step { display: none; }
+  .step.active { display: block; animation: fadeIn 0.22s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  select, input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    pointer-events: none;
+    font-size: 14px;
+  }
+
+  .criterio {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .criterio:last-child { border-bottom: none; padding-bottom: 0; }
+  .criterio:first-child { padding-top: 0; }
+
+  .criterio-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .criterio-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .criterio-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+  }
+  .criterio-desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: -6px;
+    margin-bottom: 10px;
+    padding-left: 18px;
+    line-height: 1.5;
+  }
+
+  .stars {
+    display: flex;
+    gap: 8px;
+    padding-left: 18px;
+  }
+  .star {
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--star-off);
+    transition: color 0.1s, transform 0.1s;
+    user-select: none;
+    line-height: 1;
+  }
+  .star.on { color: var(--star-on); }
+  .star:active { transform: scale(0.88); }
+
+  .star-label {
+    font-size: 11px;
+    color: var(--text3);
+    padding-left: 18px;
+    margin-top: 5px;
+    min-height: 16px;
+    font-style: italic;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    resize: none;
+    min-height: 80px;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  .anon-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-bg);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--text);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+  .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.35; cursor: default; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+  .btn-secondary:active { background: var(--border); }
+
+  /* Peer card */
+  .peer-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+    text-align: left;
+  }
+  .peer-card:hover { border-color: var(--accent); }
+  .peer-card.selected { border-color: var(--accent); background: var(--accent-bg); }
+
+  .peer-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text2);
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .peer-card.selected .peer-avatar {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .peer-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .peer-check { font-size: 16px; color: var(--accent); opacity: 0; transition: opacity 0.15s; }
+  .peer-card.selected .peer-check { opacity: 1; }
+
+  /* Success */
+  .success-icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--green-bg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+  }
+  .success-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .success-sub {
+    font-size: 13px;
+    color: var(--text2);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  /* Sending overlay */
+  .sending {
+    position: fixed; inset: 0;
+    background: rgba(247,245,240,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .sending.active { display: flex; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .error-msg {
+    background: #FEF0F0;
+    border: 1px solid #FACACD;
+    color: #C0293A;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .error-msg.active { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>EvalPar</h1>
+  <p>Evaluación entre pares</p>
+</header>
+
+<div class="container">
+
+  <!-- PASO 1: ¿Quién sos? -->
+  <div class="step active" id="step1">
+    <div class="card">
+      <div class="section-label">Paso 1 de 3 — Tu nombre</div>
+      <div class="select-wrap">
+        <select id="sel-evaluador" onchange="onEvaluadorChange()">
+          <option value="">Seleccioná tu nombre...</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn1" onclick="goStep2()" disabled>Continuar →</button>
+  </div>
+
+  <!-- PASO 2: ¿A quién evaluás? -->
+  <div class="step" id="step2">
+    <div class="card">
+      <div class="section-label">Paso 2 de 3 — ¿A quién evaluás?</div>
+      <div id="peers-list"></div>
+    </div>
+    <button class="btn-primary" id="btn2" onclick="goStep3()" disabled>Continuar →</button>
+    <button class="btn-secondary" onclick="goStep1()">← Volver</button>
+  </div>
+
+  <!-- PASO 3: Evaluación -->
+  <div class="step" id="step3">
+    <div class="anon-note">
+      🔒 Tu evaluación es anónima — tu compañero/a no sabrá que fuiste vos.
+    </div>
+
+    <div class="card">
+      <div class="section-label">Paso 3 de 3 — Criterios de evaluación</div>
+      <div id="criterios-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Comentario (opcional)</div>
+      <textarea id="comentario" placeholder="Escribí algo sobre el trabajo de tu compañero/a…" maxlength="300"></textarea>
+    </div>
+
+    <div class="error-msg" id="error-msg">
+      ⚠️ Por favor completá todos los criterios antes de enviar.
+    </div>
+
+    <button class="btn-primary" onclick="enviar()">Enviar evaluación ✓</button>
+    <button class="btn-secondary" onclick="goStep2()">← Volver</button>
+  </div>
+
+  <!-- PASO 4: Éxito -->
+  <div class="step" id="step4">
+    <div class="card" style="text-align:center;padding:32px 20px">
+      <div class="success-icon">✓</div>
+      <div class="success-title">¡Evaluación enviada!</div>
+      <div class="success-sub" id="success-msg">Tu evaluación fue registrada correctamente.</div>
+      <button class="btn-primary" onclick="reiniciar()">Evaluar a otro compañero</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="sending" id="sending">
+  <div class="spinner"></div>
+  <span>Enviando evaluación…</span>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — editá estos valores
+// ============================================================
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyYhym2HFYMIc2ytxOoAehHIpQ-3UEjWt3h87x-bf9bA5gqemZwDeVlM6CYpxbEVBn/exec'; // Pegá acá la URL del Apps Script
+
+var ALUMNOS = [
+  'Agustina Romero',
+  'Bruno Salinas',
+  'Camila Torres',
+  'Diego Fern�ndez',
+  'Eugenia L�pez',
+  'Facundo Herrera',
+  'Giuliana Paz',
+  'Hern�n Quiroga',
+  'Ivana Medina',
+  'Joaqu�n Vargas',
+  'Karen Sosa',
+  'Lucas Ben�tez',
+  'Martina Flores',
+  'Nicol�s Castro',
+  'Ornella Ramos',
+  'Pablo Jim�nez',
+  'Roc�o �lvarez',
+  'Santiago Molina',
+  'Tamara Vega',
+  'Valent�n Cruz',
+];
+
+var CRITERIOS = [
+  {
+    key: 'conceptual',
+    nombre: 'Conceptual',
+    desc: 'Comprende los contenidos y los usa correctamente',
+    color: '#2D5BE3'
+  },
+  {
+    key: 'procedimental',
+    nombre: 'Procedimental',
+    desc: 'Aplica lo aprendido, resuelve problemas y produce',
+    color: '#1A7F4B'
+  },
+  {
+    key: 'actitudinal',
+    nombre: 'Actitudinal',
+    desc: 'Participa, colabora y respeta al grupo',
+    color: '#C45C00'
+  },
+  {
+    key: 'metacognitivo',
+    nombre: 'Metacognitivo',
+    desc: 'Reflexiona sobre su propio aprendizaje',
+    color: '#7B3FBF'
+  }
+];
+
+var STAR_LABELS = ['', 'Inicial', 'Básico', 'Bueno', 'Muy bueno', 'Excelente'];
+// ============================================================
+
+var evaluador = '';
+var evaluado = '';
+var puntajes = {};
+
+// Inicializar
+(function init() {
+  var sel = document.getElementById('sel-evaluador');
+  ALUMNOS.forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    sel.appendChild(opt);
+  });
+  buildCriterios();
+})();
+
+function buildCriterios() {
+  var container = document.getElementById('criterios-list');
+  CRITERIOS.forEach(function(c) {
+    puntajes[c.key] = 0;
+    var div = document.createElement('div');
+    div.className = 'criterio';
+    div.innerHTML =
+      '<div class="criterio-header">' +
+        '<div class="criterio-dot" style="background:' + c.color + '"></div>' +
+        '<div class="criterio-name">' + c.nombre + '</div>' +
+      '</div>' +
+      '<div class="criterio-desc">' + c.desc + '</div>' +
+      '<div class="stars" id="stars-' + c.key + '">' +
+        [1,2,3,4,5].map(function(s) {
+          return '<span class="star" data-key="' + c.key + '" data-val="' + s + '">★</span>';
+        }).join('') +
+      '</div>' +
+      '<div class="star-label" id="label-' + c.key + '">—</div>';
+    container.appendChild(div);
+  });
+
+  document.querySelectorAll('.star').forEach(function(star) {
+    star.addEventListener('click', function() {
+      var key = this.dataset.key;
+      var val = parseInt(this.dataset.val);
+      puntajes[key] = val;
+      document.querySelectorAll('.star[data-key="' + key + '"]').forEach(function(s) {
+        s.classList.toggle('on', parseInt(s.dataset.val) <= val);
+      });
+      document.getElementById('label-' + key).textContent = STAR_LABELS[val];
+    });
+  });
+}
+
+function buildPeers() {
+  var container = document.getElementById('peers-list');
+  container.innerHTML = '';
+  evaluado = '';
+  document.getElementById('btn2').disabled = true;
+
+  ALUMNOS.forEach(function(a) {
+    if (a === evaluador) return; // no evaluarse a sí mismo
+    var btn = document.createElement('button');
+    btn.className = 'peer-card';
+    btn.dataset.name = a;
+    var initials = a.split(' ').map(function(p){return p[0];}).slice(0,2).join('');
+    btn.innerHTML =
+      '<div class="peer-avatar">' + initials + '</div>' +
+      '<div class="peer-name">' + a + '</div>' +
+      '<div class="peer-check">✓</div>';
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.peer-card').forEach(function(c){c.classList.remove('selected');});
+      this.classList.add('selected');
+      evaluado = this.dataset.name;
+      document.getElementById('btn2').disabled = false;
+    });
+    container.appendChild(btn);
+  });
+}
+
+function onEvaluadorChange() {
+  evaluador = document.getElementById('sel-evaluador').value;
+  document.getElementById('btn1').disabled = !evaluador;
+}
+
+function goStep1() { showStep('step1'); }
+function goStep2() { buildPeers(); showStep('step2'); }
+function goStep3() { showStep('step3'); }
+
+function goStep1() {
+  evaluador = document.getElementById('sel-evaluador').value;
+  showStep('step2');
+  buildPeers();
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function enviar() {
+  // Validar que todos los criterios estén puntuados
+  var incompleto = CRITERIOS.some(function(c){ return !puntajes[c.key]; });
+  var errEl = document.getElementById('error-msg');
+  if (incompleto) { errEl.classList.add('active'); return; }
+  errEl.classList.remove('active');
+
+  document.getElementById('sending').classList.add('active');
+
+  var payload = {
+    evaluador: evaluador,
+    evaluado: evaluado,
+    conceptual: puntajes.conceptual,
+    procedimental: puntajes.procedimental,
+    actitudinal: puntajes.actitudinal,
+    metacognitivo: puntajes.metacognitivo,
+    comentario: document.getElementById('comentario').value.trim(),
+    fecha: new Date().toLocaleString('es-AR')
+  };
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    document.getElementById('sending').classList.remove('active');
+    if (data.result === 'ok') {
+      document.getElementById('success-msg').textContent =
+        'Evaluaste a ' + evaluado + '. ¡Gracias por tu aporte!';
+      showStep('step4');
+    } else {
+      alert('Ocurrió un error. Intentá de nuevo.');
+    }
+  })
+  .catch(function() {
+    document.getElementById('sending').classList.remove('active');
+    alert('No se pudo conectar. Verificá tu conexión e intentá de nuevo.');
+  });
+}
+
+function reiniciar() {
+  // Resetear puntajes
+  CRITERIOS.forEach(function(c) {
+    puntajes[c.key] = 0;
+    document.querySelectorAll('.star[data-key="' + c.key + '"]').forEach(function(s){s.classList.remove('on');});
+    document.getElementById('label-' + c.key).textContent = '—';
+  });
+  document.getElementById('comentario').value = '';
+  evaluado = '';
+  buildPeers();
+  showStep('step2');
+}
+
+// Botón paso 1 corregido
+document.getElementById('btn1').addEventListener('click', function(){
+  if (!evaluador) return;
+  buildPeers();
+  showStep('step2');
+});
+</script>
+</body>
+</html>
